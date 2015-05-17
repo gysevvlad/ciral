@@ -3,7 +3,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "parser.h"
+#include "matrix.h"
 
 /* circuit elements */
 typedef struct {
@@ -30,5 +32,7 @@ ret:
 int element_get_next( FILE *fp, element_t *elem );
 
 void element_print( element_t *elem );
+
+void matrix_add_element( matrix_t* A, matrix_t* z, element_t* elem );
 
 #endif

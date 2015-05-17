@@ -14,6 +14,8 @@ list_t* list_add( list_t *list, void *data, size_t size );
 
 void list_foreach( list_t *list, void(f)(void*) );
 
+void list_foreach3( list_t *list, void(f)(void*, void*, void*), void* first_arg, void* second_arg );
+
 list_t* list_unfold( list_t *list, void*(f)(void), size_t size );
 
 #endif LIST_H

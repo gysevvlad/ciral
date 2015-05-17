@@ -1,5 +1,50 @@
 #include "components.h"
 
+void matrix_add_element( matrix_t* A, matrix_t* z, element_t* elem ) {
+	int vp, vn, n = -1, i;
+	double *tmp;
+
+	switch (elem->type) {
+		case RES:
+			tmp = matrix_at( A, elem->source, elem->source );
+			*tmp = *tmp + 1.0/elem->value;
+			tmp = matrix_at( A, elem->drain, elem->drain );
+			*tmp = *tmp + 1.0/elem->value;
+			tmp = matrix_at( A, elem->source, elem->drain );
+			*tmp = *tmp - 1.0/elem->value;
+			tmp = matrix_at( A, elem->drain, elem->source );
+			*tmp = *tmp - 1.0/elem->value;
+			break;
+
+		case CUR:
+			tmp = matrix_at( z, elem->source, 0);
+			*tmp = *tmp - elem->value;
+			tmp = matrix_at( z, elem->drain, 0);
+			*tmp = *tmp + elem->value;
+			break;
+
+		case VOL:
+			for ( i = 0; i < A->row_count; i++ )
+				if ( A->row_head[i][0] == 'i' && atoi(A->row_head[i]+1) == elem->number ) {
+					n = i; goto out; }
+		out:
+			tmp = matrix_at( A, n, elem->source);
+			*tmp = *tmp + 1;
+			tmp = matrix_at( A, n, elem->drain);
+			*tmp = *tmp - 1;
+			tmp = matrix_at( A, elem->source, n);
+			*tmp = *tmp + 1;
+			tmp = matrix_at( A, elem->drain, n);
+			*tmp = *tmp - 1;
+			tmp = matrix_at( z, n, 0);
+			*tmp = elem->value;
+			break;
+
+		default:
+			break;
+	}
+}
+
 /*
 ret:
 	 1 - ok

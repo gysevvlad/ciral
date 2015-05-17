@@ -23,6 +23,10 @@ void matrix_print( matrix_t* );
 
 void matrix_destroy( matrix_t* );
 
+matrix_t* matrix_row_delete( matrix_t*, int );
+
+matrix_t* matrix_col_delete( matrix_t*, int );
+
 double* matrix_at(matrix_t* ,int, int);
 
 #endif
