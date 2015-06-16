@@ -1,5 +1,19 @@
 #include "matrix.h"
 
+void matrix_row_swap( matrix_t *X, int a, int b ) {
+	double *tmp;
+	tmp = X->data[a];
+	X->data[a] = X->data[b];
+	X->data[b] = tmp;
+}
+
+void matrix_insert( matrix_t *to, matrix_t *from, int r, int c ) {
+	int i, j;
+	for ( i = 0; i < from->row_count; i++ )
+		for ( j = 0; j < from->col_count; j++ )
+			*matrix_at( to, i+r, j+c ) = *matrix_at( from, i, j );
+}
+
 matrix_t* matrix_row_delete( matrix_t* matrix, int r ) {
 	int i, j;
 	matrix_t* new_matrix = matrix_create( matrix->row_count-1, matrix->col_count);
@@ -47,26 +61,48 @@ double* matrix_at( matrix_t *matrix, int r, int c ) {
 void matrix_print( matrix_t *matrix ) {
 	int i, j; 
 	size_t tmp;
-	if ( matrix->row_head == NULL && matrix->col_head == NULL ) {
-		for ( i = 0; i < matrix->row_count; i++, printf("\n")) {
-			for( j = 0; j < matrix->col_count; j++ )
-				printf("%f ", *matrix_at(matrix, i, j));
-		}
-	} 
+
+	if ( matrix->col_head == NULL ) {
+		if ( matrix->row_head == NULL )
+			for ( i = 0; i < matrix->row_count; i++, printf("\n"))
+				for( j = 0; j < matrix->col_count; j++ )
+					printf("%f ", *matrix_at(matrix, i, j));
+		else
+			for ( i = 0; i < matrix->row_count; i++, printf("\n")) {
+				tmp = strlen(matrix->row_head[i]);
+				for ( j = 0; j < 8 - tmp; j++, putchar(' '));
+					printf("%s ", matrix->row_head[i]);	
+				for( j = 0; j < matrix->col_count; j++ )
+					printf("%f ", *matrix_at(matrix, i, j));
+			}
+	}
 	else {
-		printf("         ");
-		for ( i = 0; i < matrix->col_count; i++ ) {
-			tmp = strlen(matrix->col_head[i]);
-			for ( j = 0; j < 8 - tmp; j++, putchar(' '));
-			printf("%s ", matrix->col_head[i]);
+		if ( matrix->row_head == NULL ) {
+			for ( i = 0; i < matrix->col_count; i++ ) {
+				tmp = strlen(matrix->col_head[i]);
+				for ( j = 0; j < 8 - tmp; j++, putchar(' '));
+					printf("%s ", matrix->col_head[i]);	
+			}
+			printf("\n");			
+			for ( i = 0; i < matrix->row_count; i++, printf("\n"))
+				for( j = 0; j < matrix->col_count; j++ )
+					printf("%f ", *matrix_at(matrix, i, j));
 		}
-		printf("\n");
-		for ( i = 0; i < matrix->row_count; i++, printf("\n")) {
-			tmp = strlen(matrix->row_head[i]);
-			for ( j = 0; j < 8 - tmp; j++, putchar(' '));
-				printf("%s ", matrix->row_head[i]);	
-			for( j = 0; j < matrix->col_count; j++ )
-				printf("%f ", *matrix_at(matrix, i, j));
+		else {
+			printf("         ");
+			for ( i = 0; i < matrix->col_count; i++ ) {
+				tmp = strlen(matrix->col_head[i]);
+				for ( j = 0; j < 8 - tmp; j++, putchar(' '));
+					printf("%s ", matrix->col_head[i]);
+			}
+			printf("\n");
+			for ( i = 0; i < matrix->row_count; i++, printf("\n")) {
+				tmp = strlen(matrix->row_head[i]);
+				for ( j = 0; j < 8 - tmp; j++, putchar(' '));
+					printf("%s ", matrix->row_head[i]);	
+				for( j = 0; j < matrix->col_count; j++ )
+					printf("%f ", *matrix_at(matrix, i, j));
+			}	
 		}
 	}
 }
@@ -81,14 +117,13 @@ void matrix_head_cols( matrix_t *matrix, char **head ) {
 
 void matrix_destroy( matrix_t* matrix) {
 	int i;
-	for ( i = 0; i < matrix->row_count; i++ ) {
-		free( matrix->row_head[i] );
+	if ( matrix == NULL ) return;
+	for ( i = 0; i < matrix->row_count; i++ )
 		free( matrix->data[i] );
-	}
-	free( matrix->row_head );
 	free( matrix->data );
-	for ( i = 0; i < matrix->col_count; i++ )
-		free( matrix->col_head[i] );
+/*	
+	free( matrix->row_head );
 	free( matrix->col_head );
+*/
 	free( matrix );
 }

@@ -1,12 +1,25 @@
 #include "parser.h"
 
-int PARSE_LINE = 1;
-
-static char get_next_char( FILE *fp );
+static char  get_next_char( FILE *fp );
 static char* is_int( char *str );
 static char* is_uint( char *str );
 static char* is_char_eq( char *str, char c );
-static int is_end( char *str );
+static char* is_digits( char *str );
+static int   is_end( char *str );
+static int   is_elem( char c );
+
+int PARSE_LINE = 1;
+int LINE_END   = 0;
+int LINE_COUNT = 0;
+
+int is_elem( char c ) {
+	return c == 'V' || c == 'R' || c == 'I' ||
+	       c == 'C' || c == 'L' || c == 'D';
+}
+
+int is_space( char c ) {
+	return c == ' ' || c == '\t';
+}
 
 /* 
 Pattern:
@@ -17,10 +30,6 @@ Pattern:
 int token_check( char *token, int pattern ) {
 	int status = 0;
 	char c;
-
-#define is_elem( c ) \
-	(c == 'V' || c == 'R' || c == 'I' ||\
-	 c == 'C' || c == 'L' || c == 'D')
 
 	switch (pattern) {
 		case 1:
@@ -35,7 +44,7 @@ int token_check( char *token, int pattern ) {
 			break;
 
 		case 3:
-			if (is_end(is_uint(is_char_eq(is_int( token ), '.'))))
+			if (is_end(is_digits(is_char_eq(is_int( token ), '.'))))
 				status = 1;
 			break;
 	}
@@ -45,6 +54,7 @@ int token_check( char *token, int pattern ) {
 size_t token_get_next( FILE *fp, char *buf, size_t size ) {
 	size_t i = 0;
 	char tmp;
+	memset( buf, 0, size );
 	while ( tmp = get_next_char( fp ), 
 	        tmp != ' ' && tmp != EOF && i < size-1 )
 		i++, *buf++ = tmp;
@@ -55,10 +65,18 @@ size_t token_get_next( FILE *fp, char *buf, size_t size ) {
 char get_next_char( FILE *fp ) {
 	static int prev_space = -1;
 	char c;
+	if (LINE_END == 1) {
+		PARSE_LINE++;
+		LINE_END = 0;
+	}
 	do {
 		c = (char)fgetc( fp );
+		if ( c == '\n') {
+			LINE_COUNT++;
+		}
+
 		if ( c == '\n' ) 
-			PARSE_LINE++;
+			LINE_END = 1;
 		if ( c == '\t' || c == '\n' )
 			c = ' ';
 		if ( c == ' ' && prev_space == 0 ) {
@@ -70,12 +88,18 @@ char get_next_char( FILE *fp ) {
 			if ( c == EOF)
 				goto out;
 			if ( c == '\n' )
-				c = ' ', PARSE_LINE++;
+				c = ' ', LINE_END = 1;
 		}
 	} while ( c == ' ' && prev_space != 0 );
 	prev_space = 0;
 out:
 	return c;
+}
+
+char* is_digits( char *str ) {
+	char c = *str++;
+	while( c >= '0' && c <= '9' ) c = *str++;
+	return str;
 }
 
 char* is_int( char *str ) {

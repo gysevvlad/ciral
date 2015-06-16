@@ -2,6 +2,7 @@
 #define PARSE_H
 
 #include <stdio.h>
+#include <string.h>
 
 /* 
 Pattern:

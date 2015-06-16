@@ -1,0 +1,14 @@
+V1 1 0 2
+R1 1 2 1
+D1 2 0 
+
+* LTspice
+* V(1): 2	 voltage
+* V(2): 0.837679	 voltage
+* I(V1): -1.16232	 device_current
+
+* программа:
+* Iter: 7
+* Node 1: 2.000000 V
+* Node 2: 0.720630 V
+* Current in V1: -1.279370 A

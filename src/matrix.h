@@ -27,6 +27,10 @@ matrix_t* matrix_row_delete( matrix_t*, int );
 
 matrix_t* matrix_col_delete( matrix_t*, int );
 
+void matrix_insert( matrix_t* to, matrix_t* from, int r, int c );
+
+void matrix_row_swap( matrix_t*, int a, int b );
+
 double* matrix_at(matrix_t* ,int, int);
 
 #endif

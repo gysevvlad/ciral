@@ -1,42 +1,105 @@
 #include "components.h"
 
-void matrix_add_element( matrix_t* A, matrix_t* z, element_t* elem ) {
-	int vp, vn, n = -1, i;
+/* approximation of diode */
+void element_diod_update( matrix_t *result, element_t *diode ) {
+	double new_value;
+	if ( diode == NULL || result == NULL ) return;
+	if ( diode->source == 0 ) 
+		new_value = *matrix_at( result, 
+		                        diode->drain  - 1, 
+		                        0 );
+	else 
+		if ( diode->drain  == 0 ) 
+			new_value = *matrix_at( result, 
+			                        diode->source - 1, 
+			                        0 );
+		else 
+			new_value = *matrix_at( result, diode->source - 1, 0 ) - 
+			            *matrix_at( result, diode->drain - 1, 0 );
+    diode->value = new_value;
+}
+
+/* convert diode equivalent elements: resistor, current source */
+list_t* element_diod_transform( element_t *diod ) {
+	element_t tmp;
+	list_t   *list = NULL;
+	double Vd = diod->value,
+	       Is = 1e-12,
+	       Vt = 25.85e-3,
+	       I  = Is*(exp(Vd/Vt)-1);
+
+	tmp.source = diod->source;
+	tmp.drain  = diod->drain;
+	tmp.number = -1; /* temp value, I hope it will work */
+
+	/* add new equivalent resistor */
+	tmp.type   = RES;
+	tmp.value  = Vt/I;
+	list       = list_add( list, &tmp, sizeof(element_t) );
+
+	/* add new equivalent current source */
+	tmp.type   = CUR;
+	tmp.value  = I - I/Vt*Vd;
+	list       = list_add( list, &tmp, sizeof(element_t) );
+
+	return list;
+}
+
+int elements_get( FILE *fp, list_t **elements, list_t **diodes ) {
+	int reti    = 0,
+	    correct = 1;
+	element_t elem;
+	do {
+		reti = element_get_next( fp, &elem );
+		if ( reti == 1 ) {
+			ELEM_NODE_COUNT = (elem.source > ELEM_NODE_COUNT)? elem.source: ELEM_NODE_COUNT;
+			ELEM_NODE_COUNT = (elem.drain > ELEM_NODE_COUNT)?  elem.drain : ELEM_NODE_COUNT;
+			ELEM_DIODES_COUNT = (elem.type == DIO)? ELEM_DIODES_COUNT + 1 : ELEM_DIODES_COUNT;
+			if ( elem.type == DIO )
+				*diodes = list_add( *diodes, &elem, sizeof(element_t) );
+			else 
+				*elements = list_add( *elements, &elem, sizeof(element_t) );
+		}
+		if ( reti == -1 ) 
+			correct = 0;
+	} while ( reti != 0 );
+	return correct;
+}
+
+void matrix_add_element( matrix_t* matrix, element_t *elem ) {
+	int n = -1;
 	double *tmp;
 
 	switch (elem->type) {
 		case RES:
-			tmp = matrix_at( A, elem->source, elem->source );
+			tmp = matrix_at( matrix, elem->source, elem->source );
 			*tmp = *tmp + 1.0/elem->value;
-			tmp = matrix_at( A, elem->drain, elem->drain );
+			tmp = matrix_at( matrix, elem->drain, elem->drain );
 			*tmp = *tmp + 1.0/elem->value;
-			tmp = matrix_at( A, elem->source, elem->drain );
+			tmp = matrix_at( matrix, elem->source, elem->drain );
 			*tmp = *tmp - 1.0/elem->value;
-			tmp = matrix_at( A, elem->drain, elem->source );
+			tmp = matrix_at( matrix, elem->drain, elem->source );
 			*tmp = *tmp - 1.0/elem->value;
 			break;
 
 		case CUR:
-			tmp = matrix_at( z, elem->source, 0);
+			tmp = matrix_at( matrix, elem->source, matrix->col_count - 1 );
 			*tmp = *tmp - elem->value;
-			tmp = matrix_at( z, elem->drain, 0);
+			tmp = matrix_at( matrix, elem->drain, matrix->col_count - 1 );
 			*tmp = *tmp + elem->value;
 			break;
 
 		case VOL:
-			for ( i = 0; i < A->row_count; i++ )
-				if ( A->row_head[i][0] == 'i' && atoi(A->row_head[i]+1) == elem->number ) {
-					n = i; goto out; }
-		out:
-			tmp = matrix_at( A, n, elem->source);
+			n = ELEM_NODE_COUNT + elem->number + 1;			
+			tmp = matrix_at( matrix, n, elem->source );
 			*tmp = *tmp + 1;
-			tmp = matrix_at( A, n, elem->drain);
+			tmp = matrix_at( matrix, n, elem->drain );
 			*tmp = *tmp - 1;
-			tmp = matrix_at( A, elem->source, n);
+			tmp = matrix_at( matrix, elem->source, n );
 			*tmp = *tmp + 1;
-			tmp = matrix_at( A, elem->drain, n);
+			tmp = matrix_at( matrix, elem->drain, n );
 			*tmp = *tmp - 1;
-			tmp = matrix_at( z, n, 0);
+			tmp = matrix_at( matrix, n, matrix->col_count - 1 );
 			*tmp = elem->value;
 			break;
 
@@ -71,7 +134,10 @@ int element_get_next( FILE *fp, element_t *elem ) {
 		case 'D': elem->type = DIO; break;
 	}
 	/* number */
-	elem->number = atoi(p);
+	if ( elem->type == VOL )
+		elem->number = ELEM_VOLSRC_COUNT++;
+	else
+		elem->number = atoi(p);
 
 	/* source */
 	if (token_get_next( fp, buf, 32 ) == 0) {
@@ -111,8 +177,10 @@ int element_get_next( FILE *fp, element_t *elem ) {
 		        PARSE_LINE, buf);
 			return -1;
 		}
+		elem->value = atof(buf);
+	} else {
+		elem->value = 0.8;
 	}
-	elem->value = atof(buf);
 
 	return 1;
 }
