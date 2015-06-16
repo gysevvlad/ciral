@@ -1,8 +1,5 @@
 cls
-echo off
-cd obj
-cl /W4 /nologo /c /D _CRT_SECURE_NO_WARNINGS ..\src\test.c ..\src\matrix.c ..\src\liner_alg.c
-cd ..\bin
-link ..\obj\matrix.obj ..\obj\test.obj ..\obj\liner_alg.obj /nologo /OUT:test.exe
-cd ..
-.\bin\test < in2
+bin\ciran tests\test1.txt
+bin\ciran tests\test2.txt
+bin\ciran tests\test3.txt
+bin\ciran tests\test4.txt
